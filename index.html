@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <title>JPG to PDF Converter</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center p-4">
+
+  <div class="w-full max-w-xl bg-white/95 backdrop-blur rounded-2xl shadow-2xl p-8">
+    <h1 class="text-2xl font-bold text-center text-slate-800">🖼️ JPG → PDF Converter</h1>
+    <p class="text-center text-slate-500 mt-2">แปลงรูปภาพ JPG เป็นไฟล์ PDF ได้ทันทีในเบราว์เซอร์</p>
+
+    <div class="mt-6">
+      <label class="block text-sm font-medium text-slate-700 mb-2">เลือกรูปภาพ (JPG / JPEG)</label>
+      <input id="imageInput" type="file" accept="image/jpeg" multiple
+        class="block w-full text-sm text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-slate-800 file:text-white hover:file:bg-slate-700 cursor-pointer" />
+    </div>
+
+    <div id="preview" class="grid grid-cols-3 gap-3 mt-6"></div>
+
+    <!-- Loading Overlay -->
+    <div id="loading" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+      <div class="bg-white rounded-2xl p-6 flex flex-col items-center gap-4 shadow-xl">
+        <svg class="animate-spin h-10 w-10 text-emerald-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+        </svg>
+        <p class="text-slate-700 font-medium">กำลังแปลงไฟล์เป็น PDF...</p>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4 mt-6">
+      <button onclick="convertToPDF(false)"
+        class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition">
+        ดูไฟล์ PDF
+      </button>
+      <button onclick="convertToPDF(true)"
+        class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-xl transition">
+        ดาวน์โหลด PDF
+      </button>
+      <button onclick="convertToPDFSmall(false)"
+        class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition">
+        ดูไฟล์ PDF (รูปไม่เต็มหน้า)
+      </button>
+      <button onclick="convertToPDFSmall(true)"
+        class="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 rounded-xl transition">
+        ดาวน์โหลด PDF (รูปไม่เต็มหน้า)
+      </button>
+    </div>
+
+    <p class="text-xs text-center text-slate-400 mt-4">ไฟล์จะไม่ถูกอัปโหลดขึ้นเซิร์ฟเวอร์ (ทำงานบนเครื่องคุณ)</p>
+  </div>
+
+  <script>
+    const input = document.getElementById('imageInput');
+    const preview = document.getElementById('preview');
+
+    input.addEventListener('change', () => {
+      preview.innerHTML = '';
+      [...input.files].forEach(file => {
+        const img = document.createElement('img');
+        img.className = 'w-full h-24 object-cover rounded-lg border';
+        img.src = URL.createObjectURL(file);
+        preview.appendChild(img);
+      });
+    });
+
+    async function convertToPDF(download) {
+      if (!input.files.length) {
+        alert('กรุณาเลือกรูปก่อน');
+        return;
+      }
+
+      const loading = document.getElementById('loading');
+      loading.classList.remove('hidden');
+
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF();
+
+      for (let i = 0; i < input.files.length; i++) {
+        const file = input.files[i];
+        const imgData = await fileToBase64(file);
+        const img = new Image();
+        img.src = imgData;
+
+        await new Promise(resolve => img.onload = resolve);
+
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = (img.height * pageWidth) / img.width;
+
+        if (i > 0) pdf.addPage();
+        pdf.addImage(img, 'JPEG', 0, 0, pageWidth, pageHeight);
+      }
+
+      if (download) {
+        pdf.save('images.pdf');
+      } else {
+        const blobUrl = pdf.output('bloburl');
+        window.open(blobUrl, '_blank');
+      }
+
+      loading.classList.add('hidden');
+    }
+
+    async function convertToPDFSmall(download) {
+      if (!input.files.length) {
+        alert('กรุณาเลือกรูปก่อน');
+        return;
+      }
+
+      const loading = document.getElementById('loading');
+      loading.classList.remove('hidden');
+
+      const { jsPDF } = window.jspdf;
+
+      // ใช้ A4
+      const pdf = new jsPDF('p', 'mm', 'a4');
+
+      for (let i = 0; i < input.files.length; i++) {
+        const file = input.files[i];
+        const imgData = await fileToBase64(file);
+        const img = new Image();
+        img.src = imgData;
+
+        await new Promise(resolve => img.onload = resolve);
+
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+
+        // 👇 ปรับขนาดรูปให้เล็กลง (เช่น 70% ของหน้ากระดาษ)
+        const maxWidth = pageWidth * 0.7;
+        const maxHeight = pageHeight * 0.7;
+
+        let imgWidth = maxWidth;
+        let imgHeight = (img.height * imgWidth) / img.width;
+
+        if (imgHeight > maxHeight) {
+          imgHeight = maxHeight;
+          imgWidth = (img.width * imgHeight) / img.height;
+        }
+
+        // 👇 จัดให้อยู่กึ่งกลาง
+        const x = (pageWidth - imgWidth) / 2;
+        const y = (pageHeight - imgHeight) / 2;
+
+        if (i > 0) pdf.addPage();
+        pdf.addImage(img, 'JPEG', x, y, imgWidth, imgHeight);
+      }
+
+      if (download) {
+        pdf.save('images-small.pdf');
+      } else {
+        const blobUrl = pdf.output('bloburl');
+        window.open(blobUrl, '_blank');
+      }
+
+      loading.classList.add('hidden');
+    }
+
+    function fileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+        reader.readAsDataURL(file);
+      });
+    }
+  </script>
+
+</body>
+</html>
