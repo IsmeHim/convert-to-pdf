@@ -49,6 +49,14 @@
         class="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 rounded-xl transition">
         ดาวน์โหลด PDF (รูปไม่เต็มหน้า)
       </button>
+      <button onclick="convertToIDCard(false)"
+        class="bg-amber-600 hover:bg-amber-700 text-white font-semibold py-3 rounded-xl transition">
+        ดูบัตรประชาชน
+      </button>
+      <button onclick="convertToIDCard(true)"
+        class="bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3 rounded-xl transition">
+        ดาวน์โหลดบัตรประชาชน
+      </button>
     </div>
 
     <p class="text-xs text-center text-slate-400 mt-4">ไฟล์จะไม่ถูกอัปโหลดขึ้นเซิร์ฟเวอร์ (ทำงานบนเครื่องคุณ)</p>
@@ -152,6 +160,63 @@
 
       if (download) {
         pdf.save('images-small.pdf');
+      } else {
+        const blobUrl = pdf.output('bloburl');
+        window.open(blobUrl, '_blank');
+      }
+
+      loading.classList.add('hidden');
+    }
+
+    async function convertToIDCard(download) {
+      if (!input.files.length) {
+        alert('กรุณาเลือกรูปก่อน');
+        return;
+      }
+
+      const loading = document.getElementById('loading');
+      loading.classList.remove('hidden');
+
+      const { jsPDF } = window.jspdf;
+
+      // ใช้ A4 สำหรับปริ้น และวาดบัตรประชาชนขนาดจริงตรงกลางด้านบน
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const cardWidth = 85.6;
+      const cardHeight = 53.98;
+      const marginTop = 40;
+      const cardX = (pageWidth - cardWidth) / 2;
+      const cardY = marginTop;
+
+      for (let i = 0; i < input.files.length; i++) {
+        if (i > 0) pdf.addPage();
+
+        const file = input.files[i];
+        const imgData = await fileToBase64(file);
+        const img = new Image();
+        img.src = imgData;
+
+        await new Promise(resolve => img.onload = resolve);
+
+        // วาดพื้นหลังบัตรและขอบ
+        pdf.setFillColor(255, 255, 255);
+        pdf.rect(cardX, cardY, cardWidth, cardHeight, 'F');
+        pdf.setDrawColor(120);
+        pdf.setLineWidth(0.3);
+        pdf.rect(cardX, cardY, cardWidth, cardHeight, 'S');
+
+        // ปรับขนาดรูปให้พอดีกับบัตรประชาชนโดยรักษาสัดส่วน
+        const scale = Math.min(cardWidth / img.width, cardHeight / img.height);
+        const imgWidth = img.width * scale;
+        const imgHeight = img.height * scale;
+        const imgX = cardX + (cardWidth - imgWidth) / 2;
+        const imgY = cardY + (cardHeight - imgHeight) / 2;
+
+        pdf.addImage(img, 'JPEG', imgX, imgY, imgWidth, imgHeight);
+      }
+
+      if (download) {
+        pdf.save('id-card-a4.pdf');
       } else {
         const blobUrl = pdf.output('bloburl');
         window.open(blobUrl, '_blank');
