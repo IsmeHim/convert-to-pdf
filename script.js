@@ -160,7 +160,6 @@ async function convertToIDCard(download) {
     pdf.rect(cardX, cardY, cardWidth, cardHeight, 'F');
     pdf.setDrawColor(120);
     pdf.setLineWidth(0.3);
-    pdf.rect(cardX, cardY, cardWidth, cardHeight, 'S');
 
     const scale = Math.min(cardWidth / img.width, cardHeight / img.height);
     const imgWidth = img.width * scale;
