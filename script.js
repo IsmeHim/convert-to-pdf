@@ -326,3 +326,51 @@ function fileToBase64(file) {
     reader.readAsDataURL(file);
   });
 }
+
+async function convertToPassbook(download) {
+  if (!selectedFiles.length) {
+    alert('กรุณาเลือกรูปก่อน');
+    return;
+  }
+
+  const loading = document.getElementById('loading');
+  loading.classList.remove('hidden');
+
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF('p', 'mm', 'a4');
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  const passbookWidth = 80; // ความกว้างรูปสมุดบัญชี หน่วยมิลลิเมตร
+  const passbookHeight = 120; // ความสูงรูปสมุดบัญชี หน่วยมิลลิเมตร
+  const offsetX = 0; // ขยับซ้าย/ขวา: ค่าบวกไปขวา, ค่าลบไปซ้าย
+  const offsetY = -60; // ขยับขึ้น/ลง: ค่าบวกลงล่าง, ค่าลบขึ้นบน
+
+  const images = await Promise.all(selectedFiles.map(async file => {
+    const imgData = await fileToBase64(file);
+    const img = new Image();
+    img.src = imgData;
+    await new Promise(resolve => img.onload = resolve);
+    return img;
+  }));
+
+  images.forEach((img, index) => {
+    if (index > 0) pdf.addPage();
+
+    const scale = Math.min(passbookWidth / img.width, passbookHeight / img.height);
+    const imgWidth = img.width * scale;
+    const imgHeight = img.height * scale;
+    const imgX = (pageWidth - imgWidth) / 2 + offsetX;
+    const imgY = (pageHeight - imgHeight) / 2 + offsetY;
+
+    pdf.addImage(img, 'JPEG', imgX, imgY, imgWidth, imgHeight);
+  });
+
+  if (download) {
+    pdf.save('passbook.pdf');
+  } else {
+    const blobUrl = pdf.output('bloburl');
+    window.open(blobUrl, '_blank');
+  }
+
+  loading.classList.add('hidden');
+}
