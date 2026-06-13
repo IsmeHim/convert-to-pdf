@@ -48,7 +48,7 @@ async function convertToPDF(download) {
   loading.classList.remove('hidden');
 
   const { jsPDF } = window.jspdf;
-  const pdf = new jsPDF();
+  const pdf = new jsPDF('p', 'mm', 'a4');
 
   for (let i = 0; i < selectedFiles.length; i++) {
     const file = selectedFiles[i];
@@ -59,10 +59,15 @@ async function convertToPDF(download) {
     await new Promise(resolve => img.onload = resolve);
 
     const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = (img.height * pageWidth) / img.width;
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const scale = Math.min(pageWidth / img.width, pageHeight / img.height);
+    const imgWidth = img.width * scale;
+    const imgHeight = img.height * scale;
+    const x = (pageWidth - imgWidth) / 2;
+    const y = (pageHeight - imgHeight) / 2;
 
     if (i > 0) pdf.addPage();
-    pdf.addImage(img, 'JPEG', 0, 0, pageWidth, pageHeight);
+    pdf.addImage(img, 'JPEG', x, y, imgWidth, imgHeight);
   }
 
   if (download) {
