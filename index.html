@@ -80,7 +80,8 @@
       <input id="imageInput" type="file" accept="image/jpeg" multiple
         class="block w-full text-sm text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-slate-800 file:text-white hover:file:bg-slate-700 cursor-pointer" />
     </div>
-    <p class="text-sm text-slate-500 mt-2">สำหรับสำเนาทะเบียนบ้าน ให้เลือก 2 รูปเรียงตามลำดับบน-ล่าง (รูปแรกบน รูปที่สองล่าง) และจะแปลงเป็นขนาดจริง 22.8 x 15.5 ซม.</p>
+    <p class="text-sm text-slate-500 mt-2">สำหรับบัตรประชาชนหน้า-หลัง ให้เลือก 2 รูปเรียงตามลำดับ (รูปแรกด้านหน้า รูปที่สองด้านหลัง) ระบบจะจัดด้านหลังไว้ข้างล่างในหน้า A4 เดียวกัน</p>
+    <p class="text-sm text-slate-500 mt-1">สำหรับสำเนาทะเบียนบ้าน ให้เลือก 2 รูปเรียงตามลำดับบน-ล่าง (รูปแรกบน รูปที่สองล่าง) และจะแปลงเป็นขนาดจริง 22.8 x 15.5 ซม.</p>
 
     <div id="preview" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mt-6"></div>
 
@@ -119,6 +120,14 @@
       <button onclick="convertToIDCard(true)"
         class="glass-button-accent text-white font-semibold py-3 rounded-2xl transition">
         ดาวน์โหลดบัตรประชาชน
+      </button>
+      <button onclick="convertToIDCardFrontBack(false)"
+        class="glass-button-accent text-white font-semibold py-3 rounded-2xl transition">
+        ดูบัตรหน้า-หลัง
+      </button>
+      <button onclick="convertToIDCardFrontBack(true)"
+        class="glass-button-accent text-white font-semibold py-3 rounded-2xl transition">
+        ดาวน์โหลดบัตรหน้า-หลัง
       </button>
       <button onclick="convertToHouseCopy(false)"
         class="glass-button text-white font-semibold py-3 rounded-2xl transition">

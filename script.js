@@ -185,6 +185,63 @@ async function convertToIDCard(download) {
   loading.classList.add('hidden');
 }
 
+async function convertToIDCardFrontBack(download) {
+  if (!selectedFiles.length) {
+    alert('กรุณาเลือกรูปก่อน');
+    return;
+  }
+  if (selectedFiles.length < 2) {
+    alert('สำหรับบัตรประชาชนหน้า-หลัง ต้องเลือก 2 รูป เรียงตามลำดับด้านหน้า-ด้านหลัง');
+    return;
+  }
+
+  const loading = document.getElementById('loading');
+  loading.classList.remove('hidden');
+
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF('p', 'mm', 'a4');
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const cardWidth = 85.6;
+  const cardHeight = 53.98;
+  const gutter = 80;
+  const startY = 30;
+  const cardX = (pageWidth - cardWidth) / 2;
+
+  const images = await Promise.all([selectedFiles[0], selectedFiles[1]].map(async file => {
+    const imgData = await fileToBase64(file);
+    const img = new Image();
+    img.src = imgData;
+    await new Promise(resolve => img.onload = resolve);
+    return img;
+  }));
+
+  images.forEach((img, index) => {
+    const cardY = startY + index * (cardHeight + gutter);
+
+    pdf.setFillColor(255, 255, 255);
+    pdf.rect(cardX, cardY, cardWidth, cardHeight, 'F');
+    pdf.setDrawColor(120);
+    pdf.setLineWidth(0.3);
+
+    const scale = Math.min(cardWidth / img.width, cardHeight / img.height);
+    const imgWidth = img.width * scale;
+    const imgHeight = img.height * scale;
+    const imgX = cardX + (cardWidth - imgWidth) / 2;
+    const imgY = cardY + (cardHeight - imgHeight) / 2;
+
+    pdf.addImage(img, 'JPEG', imgX, imgY, imgWidth, imgHeight);
+  });
+
+  if (download) {
+    pdf.save('id-card-front-back-a4.pdf');
+  } else {
+    const blobUrl = pdf.output('bloburl');
+    window.open(blobUrl, '_blank');
+  }
+
+  loading.classList.add('hidden');
+}
+
 async function convertToHouseCopy(download) {
   if (!selectedFiles.length) {
     alert('กรุณาเลือกรูปก่อน');
